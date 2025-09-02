@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindSprout</title>
+    <link rel="stylesheet" href="index.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.16.0"
+  }
+}
+</script>
+</head>
+<body>
+    <div id="app-container">
+        <header>
+            <h1>🌱 MindSprout</h1>
+            <p>AI의 따뜻한 시선으로 우리 아이의 가능성을 발견하세요</p>
+        </header>
+
+        <main>
+            <section id="input-section">
+                <form id="analysis-form">
+                    <div class="form-group">
+                        <label for="photo-upload" class="photo-upload-label">
+                            <img id="image-preview" src="#" alt="미리보기" class="hidden">
+                            <div class="upload-prompt">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="upload-icon">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                                <span>아이 사진을 여기에 끌어다 놓거나 클릭하세요</span>
+                            </div>
+                        </label>
+                        <input type="file" id="photo-upload" accept="image/png, image/jpeg">
+                    </div>
+
+                    <div id="error-message-container" class="error-message hidden"></div>
+                    
+                    <div class="form-group">
+                        <label>메시지 테마 선택</label>
+                        <div class="theme-options">
+                            <button type="button" class="theme-option active" data-theme="default">기본 격려</button>
+                            <button type="button" class="theme-option" data-theme="cheer">오늘의 응원</button>
+                            <button type="button" class="theme-option" data-theme="comfort">따뜻한 위로</button>
+                        </div>
+                    </div>
+                    
+                    <div id="theme-context-group" class="form-group hidden">
+                        <label id="theme-context-label" for="theme-context">응원 주제</label>
+                        <input type="text" id="theme-context" placeholder="예: 오늘 축구 시합이 있어요">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="child-name">아이 이름/별명</label>
+                            <input type="text" id="child-name" placeholder="예: 서준이" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="child-age">나이/학년</label>
+                            <input type="text" id="child-age" placeholder="예: 7살" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="child-trait">아이의 특징 또는 칭찬하고 싶은 점</label>
+                        <textarea id="child-trait" placeholder="예: 요즘 부쩍 동생을 잘 챙겨요. 호기심이 많고 질문하는 것을 좋아해요." required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="message-recipient">받는 사람 (선택)</label>
+                        <input type="text" id="message-recipient" placeholder="예: 어머니">
+                    </div>
+                    <p class="form-hint">'받는 사람'을 비워두면 아이에게 직접 말하는 형식으로, 입력하면 그 사람에게 아이에 대해 이야기하는 형식으로 메시지가 생성됩니다.</p>
+                    
+                    <button type="submit" id="analyze-button">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sparkles"><path d="M12 2L14.39 8.36L21 10.15L16.32 15.24L17.61 22L12 18.27L6.39 22L7.68 15.24L3 10.15L9.61 8.36L12 2z"></path></svg>
+                        <span>따뜻한 메시지 만들기</span>
+                    </button>
+                </form>
+            </section>
+
+            <section id="loading-section" class="hidden">
+                <div class="sprout-animation">
+                    <div class="pot"></div>
+                    <div class="stem"></div>
+                    <div class="leaf leaf-left"></div>
+                    <div class="leaf leaf-right"></div>
+                </div>
+                <p id="loading-message">우리아이의 특별함을 찾고 있습니다...</p>
+            </section>
+
+            <section id="result-section" class="hidden">
+                <div id="result-card">
+                    <img id="result-image" src="#" alt="분석한 아이 사진">
+                    <p id="result-message"></p>
+                    <textarea id="result-message-edit" class="hidden" aria-label="결과 메시지 수정"></textarea>
+                </div>
+                <div class="result-actions">
+                    <button id="save-image-button"><span>이미지 저장</span></button>
+                    <button id="save-pdf-button"><span>PDF 저장</span></button>
+                    <button id="copy-text-button"><span>텍스트 복사</span></button>
+                    <button id="edit-message-button"><span>내용 수정</span></button>
+                </div>
+                 <button id="restart-button"><span>새로 만들기</span></button>
+            </section>
+        </main>
+    </div>
+    <script type="module" src="index.tsx"></script>
+</body>
+</html>
